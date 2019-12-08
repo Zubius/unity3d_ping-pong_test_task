@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class BallView : MonoBehaviour
 {
-    [SerializeField] private Rigidbody rigibody;
+    [SerializeField] private Rigidbody rigidbody;
 
     internal Action<Collision> OnScored;
 
@@ -15,17 +15,22 @@ public class BallView : MonoBehaviour
     private const string ScoreTag = "Finish";
     private const string BounceTag = "Bounce";
 
-    private void Start()
+    private float _speed = 0;
+    private Vector2 _velocity;
+    private bool _isLaunched = false;
+
+    private void OnEnable()
     {
         _cachedRenderer = GetComponent<MeshRenderer>();
         _cachedTransform = transform;
-
-        Launch(new Vector3(1000, 0));
     }
 
-    internal void Launch(Vector2 direction)
+    internal void Launch(Vector2 direction, float speed)
     {
-        rigibody.AddForce(direction);
+        Debug.Log($"{direction}, {speed}");
+        _speed = speed;
+        _velocity = direction;
+        _isLaunched = true;
     }
 
     internal void SetColor(Color color)
@@ -36,11 +41,22 @@ public class BallView : MonoBehaviour
         }
     }
 
-    internal void SetSize(int size)
+    internal void SetSize(float size)
     {
         if (_cachedTransform != null)
         {
             _cachedTransform.localScale = new Vector3(size, size, size);
+        }
+    }
+
+    private void Update()
+    {
+        if (_isLaunched)
+        {
+            _velocity = _velocity.normalized * _speed;
+            rigidbody.velocity = _velocity;
+
+            Debug.DrawRay(transform.position, rigidbody.velocity, Color.green);
         }
     }
 
@@ -51,11 +67,24 @@ public class BallView : MonoBehaviour
         if (other.transform.tag.Equals(ScoreTag))
         {
             OnScored?.Invoke(other);
+            _isLaunched = false;
+            rigidbody.velocity = Vector3.zero;
         }
 
         if (other.transform.tag.Equals(BounceTag))
         {
-            Launch(new Vector2());
+            Vector3 d, n, r;
+
+            foreach (var contact in other.contacts)
+            {
+                Debug.DrawRay(contact.point, contact.normal, Color.red, 10);
+
+                d = _velocity;
+                n = contact.normal;
+                r = d - (2 * Vector3.Dot(d, n) * n);
+
+                _velocity = r;
+            }
         }
     }
 }
