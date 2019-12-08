@@ -17,14 +17,17 @@ public class GameController : MonoBehaviour
     private int _myScore, _rivalScore;
     private WaitForSeconds _waitFor1sec = new WaitForSeconds(1);
 
+    private const string myScoreKey = "my_best_score";
+    private const string rivalScoreKey = "rival_best_score";
+
     private void Start()
     {
         if (ball != null)
         {
             ball.OnScored += OnScored;
+            ball.transform.localPosition = new Vector2(10000, 10000);
         }
 
-        ball.transform.localPosition = new Vector2(10000, 10000);
         Restart();
     }
 
@@ -78,5 +81,11 @@ public class GameController : MonoBehaviour
         {
             ball.OnScored = null;
         }
+
+        int myBest = PlayerPrefs.GetInt(myScoreKey, 0);
+        int rivalBest = PlayerPrefs.GetInt(rivalScoreKey, 0);
+
+        PlayerPrefs.SetInt(myScoreKey, Mathf.Max(myBest, _myScore));
+        PlayerPrefs.SetInt(rivalScoreKey, Mathf.Max(rivalBest, _rivalScore));
     }
 }
