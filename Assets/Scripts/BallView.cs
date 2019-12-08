@@ -27,7 +27,6 @@ public class BallView : MonoBehaviour
 
     internal void Launch(Vector2 direction, float speed)
     {
-        Debug.Log($"{direction}, {speed}");
         _speed = speed;
         _velocity = direction;
         _isLaunched = true;
@@ -62,8 +61,6 @@ public class BallView : MonoBehaviour
 
     private void OnCollisionEnter(Collision other)
     {
-        Debug.Log($"{name} {nameof(OnCollisionEnter)} {other.gameObject.name} {other.transform.tag}");
-
         if (other.transform.tag.Equals(ScoreTag))
         {
             OnScored?.Invoke(other);
@@ -77,8 +74,6 @@ public class BallView : MonoBehaviour
 
             foreach (var contact in other.contacts)
             {
-                Debug.DrawRay(contact.point, contact.normal, Color.red, 10);
-
                 d = _velocity;
                 n = contact.normal;
                 r = d - (2 * Vector3.Dot(d, n) * n);

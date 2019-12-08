@@ -41,12 +41,11 @@ public class GameController : MonoBehaviour
 
     private IEnumerator LaunchBall()
     {
-        countText.text = "3";
-        yield return _waitFor1sec;
-        countText.text = "2";
-        yield return _waitFor1sec;
-        countText.text = "1";
-        yield return _waitFor1sec;
+        for (int i = 3; i > 0; i--)
+        {
+            countText.text = i.ToString();
+            yield return _waitFor1sec;
+        }
         countText.text = string.Empty;
 
         ball.transform.localPosition = Vector3.zero;
