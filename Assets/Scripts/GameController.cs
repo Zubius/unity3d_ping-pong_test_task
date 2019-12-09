@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
@@ -7,39 +8,90 @@ using Random = UnityEngine.Random;
 public class GameController : MonoBehaviour
 {
     [SerializeField] private BallView ball;
-    [SerializeField] private IRacketInput playerRacket;
-    [SerializeField] private IRacketInput rivalRacket;
 
     [SerializeField] private Text countText;
     [SerializeField] private Text myScoreText;
     [SerializeField] private Text rivalScoreText;
 
-    private int _myScore, _rivalScore;
-    private WaitForSeconds _waitFor1sec = new WaitForSeconds(1);
+    [SerializeField] private TouchInputController touchInput;
+
+    [SerializeField] private Racket playerRacket;
+    [SerializeField] private Racket rivalRacket;
+
+    [SerializeField] private GameObject menu;
+
+    private int _myScore, _rivalScore, _myBestScore, _rivalBestScore;
+    private readonly WaitForSeconds _waitFor1Sec = new WaitForSeconds(1);
+    private bool _menuIsActive = false;
 
     private const string myScoreKey = "my_best_score";
     private const string rivalScoreKey = "rival_best_score";
+    private const string bestScoreFormat = "{0} ({1})";
+
+    private InputType _inputType = InputType.None;
+
+    private Dictionary<InputType, IRacketInput> _inputs;
+
+    private Coroutine _launchCoroutine = null;
 
     private void Start()
     {
         if (ball != null)
         {
             ball.OnScored += OnScored;
-            ball.transform.localPosition = new Vector2(10000, 10000);
         }
 
-        Restart();
+        _inputs = new Dictionary<InputType, IRacketInput>
+        {
+            {InputType.Touch, touchInput}
+        };
+
+        playerRacket.SetInput(touchInput);
+
+        _myBestScore = PlayerPrefs.GetInt(myScoreKey, 0);
+        _rivalBestScore = PlayerPrefs.GetInt(rivalScoreKey, 0);
+
+        myScoreText.text = string.Format(bestScoreFormat, _myScore.ToString(), _myBestScore.ToString());
+        rivalScoreText.text = string.Format(bestScoreFormat, _rivalScore.ToString(), _rivalBestScore.ToString());
+
+        _inputType = InputType.Touch;
+        Restart(_inputType);
     }
 
-    private void Restart()
+    public void OnMenuPressed()
     {
+        _menuIsActive = !_menuIsActive;
+        menu.SetActive(_menuIsActive);
+
+        Time.timeScale = _menuIsActive ? 0 : 1;
+    }
+
+    public void OnRestartPressed()
+    {
+        Restart(_inputType);
+    }
+
+    private void Restart(InputType inputType)
+    {
+        _menuIsActive = false;
+        menu.SetActive(_menuIsActive);
+        Time.timeScale = 1;
+
         _myScore = 0;
         _rivalScore = 0;
 
-        myScoreText.text = _myScore.ToString();
-        rivalScoreText.text = _rivalScore.ToString();
+        myScoreText.text = string.Format(bestScoreFormat, _myScore.ToString(), _myBestScore.ToString());
+        rivalScoreText.text = string.Format(bestScoreFormat, _rivalScore.ToString(), _rivalBestScore.ToString());
 
-        StartCoroutine(LaunchBall());
+        rivalRacket.SetInput(_inputs[inputType]);
+
+        ball.transform.localPosition = new Vector2(10000, 10000);
+        ball.SetSize(Random.Range(0.1f, 1f));
+        ball.SetColor(Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f));
+
+        if (_launchCoroutine != null)
+            StopCoroutine(_launchCoroutine);
+        _launchCoroutine = StartCoroutine(LaunchBall());
     }
 
     private IEnumerator LaunchBall()
@@ -47,13 +99,11 @@ public class GameController : MonoBehaviour
         for (int i = 3; i > 0; i--)
         {
             countText.text = i.ToString();
-            yield return _waitFor1sec;
+            yield return _waitFor1Sec;
         }
         countText.text = string.Empty;
 
         ball.transform.localPosition = Vector3.zero;
-        ball.SetSize(Random.Range(0.1f, 1f));
-        ball.SetColor(Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f));
         ball.Launch(new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f)), Random.Range(1f, 10f));
     }
 
@@ -62,16 +112,21 @@ public class GameController : MonoBehaviour
         if (obj.transform.localPosition.y > 0)
         {
             _myScore++;
-            myScoreText.text = _myScore.ToString();
+            _myBestScore = Mathf.Max(_myScore, _myBestScore);
+            myScoreText.text = string.Format(bestScoreFormat, _myScore.ToString(), _myBestScore.ToString());
         }
 
         if (obj.transform.localPosition.y < 0)
         {
             _rivalScore++;
-            rivalScoreText.text = _rivalScore.ToString();
+            _rivalBestScore = Mathf.Max(_rivalScore, _rivalBestScore);
+            rivalScoreText.text = string.Format(bestScoreFormat, _rivalScore.ToString(), _rivalBestScore.ToString());
         }
 
         ball.transform.localPosition = new Vector2(10000, 10000);
+
+        if (_launchCoroutine != null)
+            StopCoroutine(_launchCoroutine);
         StartCoroutine(LaunchBall());
     }
 
@@ -82,10 +137,26 @@ public class GameController : MonoBehaviour
             ball.OnScored = null;
         }
 
-        int myBest = PlayerPrefs.GetInt(myScoreKey, 0);
-        int rivalBest = PlayerPrefs.GetInt(rivalScoreKey, 0);
-
-        PlayerPrefs.SetInt(myScoreKey, Mathf.Max(myBest, _myScore));
-        PlayerPrefs.SetInt(rivalScoreKey, Mathf.Max(rivalBest, _rivalScore));
+        SaveBestScores();
     }
+
+    private void OnApplicationPause(bool isPaused)
+    {
+        if (isPaused)
+            SaveBestScores();
+    }
+
+    private void SaveBestScores()
+    {
+        PlayerPrefs.SetInt(myScoreKey, Mathf.Max(_myBestScore, _myScore));
+        PlayerPrefs.SetInt(rivalScoreKey, Mathf.Max(_rivalBestScore, _rivalScore));
+        PlayerPrefs.Save();
+    }
+}
+
+internal enum InputType
+{
+    None = 0,
+    Touch,
+    Photon,
 }
