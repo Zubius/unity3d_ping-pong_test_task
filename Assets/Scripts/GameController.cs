@@ -18,21 +18,27 @@ public class GameController : MonoBehaviour
     [SerializeField] private Racket playerRacket;
     [SerializeField] private Racket rivalRacket;
 
+    [SerializeField] private GameObject menu;
+
     private int _myScore, _rivalScore, _myBestScore, _rivalBestScore;
     private readonly WaitForSeconds _waitFor1Sec = new WaitForSeconds(1);
+    private bool _menuIsActive = false;
 
     private const string myScoreKey = "my_best_score";
     private const string rivalScoreKey = "rival_best_score";
     private const string bestScoreFormat = "{0} ({1})";
 
+    private InputType _inputType = InputType.None;
+
     private Dictionary<InputType, IRacketInput> _inputs;
+
+    private Coroutine _launchCoroutine = null;
 
     private void Start()
     {
         if (ball != null)
         {
             ball.OnScored += OnScored;
-            ball.transform.localPosition = new Vector2(10000, 10000);
         }
 
         _inputs = new Dictionary<InputType, IRacketInput>
@@ -48,16 +54,29 @@ public class GameController : MonoBehaviour
         myScoreText.text = string.Format(bestScoreFormat, _myScore.ToString(), _myBestScore.ToString());
         rivalScoreText.text = string.Format(bestScoreFormat, _rivalScore.ToString(), _rivalBestScore.ToString());
 
-        Restart(InputType.Touch);
+        _inputType = InputType.Touch;
+        Restart(_inputType);
     }
 
     public void OnMenuPressed()
     {
+        _menuIsActive = !_menuIsActive;
+        menu.SetActive(_menuIsActive);
 
+        Time.timeScale = _menuIsActive ? 0 : 1;
+    }
+
+    public void OnRestartPressed()
+    {
+        Restart(_inputType);
     }
 
     private void Restart(InputType inputType)
     {
+        _menuIsActive = false;
+        menu.SetActive(_menuIsActive);
+        Time.timeScale = 1;
+
         _myScore = 0;
         _rivalScore = 0;
 
@@ -66,10 +85,13 @@ public class GameController : MonoBehaviour
 
         rivalRacket.SetInput(_inputs[inputType]);
 
+        ball.transform.localPosition = new Vector2(10000, 10000);
         ball.SetSize(Random.Range(0.1f, 1f));
         ball.SetColor(Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f));
 
-        StartCoroutine(LaunchBall());
+        if (_launchCoroutine != null)
+            StopCoroutine(_launchCoroutine);
+        _launchCoroutine = StartCoroutine(LaunchBall());
     }
 
     private IEnumerator LaunchBall()
@@ -102,6 +124,9 @@ public class GameController : MonoBehaviour
         }
 
         ball.transform.localPosition = new Vector2(10000, 10000);
+
+        if (_launchCoroutine != null)
+            StopCoroutine(_launchCoroutine);
         StartCoroutine(LaunchBall());
     }
 

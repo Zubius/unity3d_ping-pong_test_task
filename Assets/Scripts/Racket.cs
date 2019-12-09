@@ -12,7 +12,6 @@ public class Racket : MonoBehaviour
     [HideInInspector] internal bool CanMove = false;
 
     private Transform _cachedTransform;
-    private bool _touched = false;
 
     private IRacketInput _inputManager;
 
@@ -21,9 +20,7 @@ public class Racket : MonoBehaviour
 
     internal void SetInput(IRacketInput inputManager)
     {
-        Assert.IsNull(_inputManager);
-
-        this._inputManager = inputManager;
+        _inputManager = inputManager;
     }
 
     private void OnEnable()
@@ -49,14 +46,5 @@ public class Racket : MonoBehaviour
                 _lastTouchedPosition = newPosition;
             }
         }
-    }
-
-    private float GetInput()
-    {
-        float input = 0;
-
-
-
-        return input;
     }
 }
