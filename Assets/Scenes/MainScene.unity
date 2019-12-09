@@ -1289,6 +1289,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2090535745}
   - component: {fileID: 2090535744}
+  - component: {fileID: 2090535746}
   m_Layer: 0
   m_Name: GameController
   m_TagString: Untagged
@@ -1312,6 +1313,9 @@ MonoBehaviour:
   countText: {fileID: 208285240}
   myScoreText: {fileID: 116625334}
   rivalScoreText: {fileID: 2039151794}
+  touchInput: {fileID: 2090535746}
+  playerRacket: {fileID: 398152709}
+  rivalRacket: {fileID: 216798775}
 --- !u!4 &2090535745
 Transform:
   m_ObjectHideFlags: 0
@@ -1326,3 +1330,15 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2090535746
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2090535743}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58cb571410eb497289285d0929ae2870, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

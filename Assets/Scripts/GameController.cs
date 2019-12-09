@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
@@ -7,18 +8,23 @@ using Random = UnityEngine.Random;
 public class GameController : MonoBehaviour
 {
     [SerializeField] private BallView ball;
-    [SerializeField] private IRacketInput playerRacket;
-    [SerializeField] private IRacketInput rivalRacket;
 
     [SerializeField] private Text countText;
     [SerializeField] private Text myScoreText;
     [SerializeField] private Text rivalScoreText;
 
+    [SerializeField] private TouchInputController touchInput;
+
+    [SerializeField] private Racket playerRacket;
+    [SerializeField] private Racket rivalRacket;
+
     private int _myScore, _rivalScore;
-    private WaitForSeconds _waitFor1sec = new WaitForSeconds(1);
+    private readonly WaitForSeconds _waitFor1Sec = new WaitForSeconds(1);
 
     private const string myScoreKey = "my_best_score";
     private const string rivalScoreKey = "rival_best_score";
+
+    private Dictionary<InputType, IRacketInput> _inputs;
 
     private void Start()
     {
@@ -28,16 +34,25 @@ public class GameController : MonoBehaviour
             ball.transform.localPosition = new Vector2(10000, 10000);
         }
 
-        Restart();
+        _inputs = new Dictionary<InputType, IRacketInput>
+        {
+            {InputType.Touch, touchInput}
+        };
+
+        playerRacket.SetInput(touchInput);
+
+        Restart(InputType.Touch);
     }
 
-    private void Restart()
+    private void Restart(InputType inputType)
     {
         _myScore = 0;
         _rivalScore = 0;
 
         myScoreText.text = _myScore.ToString();
         rivalScoreText.text = _rivalScore.ToString();
+
+        rivalRacket.SetInput(_inputs[inputType]);
 
         StartCoroutine(LaunchBall());
     }
@@ -47,7 +62,7 @@ public class GameController : MonoBehaviour
         for (int i = 3; i > 0; i--)
         {
             countText.text = i.ToString();
-            yield return _waitFor1sec;
+            yield return _waitFor1Sec;
         }
         countText.text = string.Empty;
 
@@ -88,4 +103,11 @@ public class GameController : MonoBehaviour
         PlayerPrefs.SetInt(myScoreKey, Mathf.Max(myBest, _myScore));
         PlayerPrefs.SetInt(rivalScoreKey, Mathf.Max(rivalBest, _rivalScore));
     }
+}
+
+internal enum InputType
+{
+    None = 0,
+    Touch,
+    Photon,
 }
