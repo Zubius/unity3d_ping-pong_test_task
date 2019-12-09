@@ -18,11 +18,12 @@ public class GameController : MonoBehaviour
     [SerializeField] private Racket playerRacket;
     [SerializeField] private Racket rivalRacket;
 
-    private int _myScore, _rivalScore;
+    private int _myScore, _rivalScore, _myBestScore, _rivalBestScore;
     private readonly WaitForSeconds _waitFor1Sec = new WaitForSeconds(1);
 
     private const string myScoreKey = "my_best_score";
     private const string rivalScoreKey = "rival_best_score";
+    private const string bestScoreFormat = "{0} ({1})";
 
     private Dictionary<InputType, IRacketInput> _inputs;
 
@@ -41,7 +42,18 @@ public class GameController : MonoBehaviour
 
         playerRacket.SetInput(touchInput);
 
+        _myBestScore = PlayerPrefs.GetInt(myScoreKey, 0);
+        _rivalBestScore = PlayerPrefs.GetInt(rivalScoreKey, 0);
+
+        myScoreText.text = string.Format(bestScoreFormat, _myScore.ToString(), _myBestScore.ToString());
+        rivalScoreText.text = string.Format(bestScoreFormat, _rivalScore.ToString(), _rivalBestScore.ToString());
+
         Restart(InputType.Touch);
+    }
+
+    public void OnMenuPressed()
+    {
+
     }
 
     private void Restart(InputType inputType)
@@ -49,10 +61,13 @@ public class GameController : MonoBehaviour
         _myScore = 0;
         _rivalScore = 0;
 
-        myScoreText.text = _myScore.ToString();
-        rivalScoreText.text = _rivalScore.ToString();
+        myScoreText.text = string.Format(bestScoreFormat, _myScore.ToString(), _myBestScore.ToString());
+        rivalScoreText.text = string.Format(bestScoreFormat, _rivalScore.ToString(), _rivalBestScore.ToString());
 
         rivalRacket.SetInput(_inputs[inputType]);
+
+        ball.SetSize(Random.Range(0.1f, 1f));
+        ball.SetColor(Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f));
 
         StartCoroutine(LaunchBall());
     }
@@ -67,8 +82,6 @@ public class GameController : MonoBehaviour
         countText.text = string.Empty;
 
         ball.transform.localPosition = Vector3.zero;
-        ball.SetSize(Random.Range(0.1f, 1f));
-        ball.SetColor(Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f));
         ball.Launch(new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f)), Random.Range(1f, 10f));
     }
 
@@ -77,13 +90,15 @@ public class GameController : MonoBehaviour
         if (obj.transform.localPosition.y > 0)
         {
             _myScore++;
-            myScoreText.text = _myScore.ToString();
+            _myBestScore = Mathf.Max(_myScore, _myBestScore);
+            myScoreText.text = string.Format(bestScoreFormat, _myScore.ToString(), _myBestScore.ToString());
         }
 
         if (obj.transform.localPosition.y < 0)
         {
             _rivalScore++;
-            rivalScoreText.text = _rivalScore.ToString();
+            _rivalBestScore = Mathf.Max(_rivalScore, _rivalBestScore);
+            rivalScoreText.text = string.Format(bestScoreFormat, _rivalScore.ToString(), _rivalBestScore.ToString());
         }
 
         ball.transform.localPosition = new Vector2(10000, 10000);
@@ -97,11 +112,20 @@ public class GameController : MonoBehaviour
             ball.OnScored = null;
         }
 
-        int myBest = PlayerPrefs.GetInt(myScoreKey, 0);
-        int rivalBest = PlayerPrefs.GetInt(rivalScoreKey, 0);
+        SaveBestScores();
+    }
 
-        PlayerPrefs.SetInt(myScoreKey, Mathf.Max(myBest, _myScore));
-        PlayerPrefs.SetInt(rivalScoreKey, Mathf.Max(rivalBest, _rivalScore));
+    private void OnApplicationPause(bool isPaused)
+    {
+        if (isPaused)
+            SaveBestScores();
+    }
+
+    private void SaveBestScores()
+    {
+        PlayerPrefs.SetInt(myScoreKey, Mathf.Max(_myBestScore, _myScore));
+        PlayerPrefs.SetInt(rivalScoreKey, Mathf.Max(_rivalBestScore, _rivalScore));
+        PlayerPrefs.Save();
     }
 }
 
