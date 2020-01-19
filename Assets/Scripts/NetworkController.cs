@@ -8,7 +8,7 @@ public class NetworkController : Bolt.GlobalEventListener
 {
     public ConnectState  State => _state;
     public event Action OnConnected;
-    public event Action<GameObject> OnBallReceived;
+    public event Action<BoltEntity> OnEntityReceived;
 
     private ConnectState _state = ConnectState.Disconnected;
     private bool _waitingInitialRoomLiat = false;
@@ -108,7 +108,7 @@ public class NetworkController : Bolt.GlobalEventListener
     public override void EntityReceived(BoltEntity entity)
     {
         Debug.LogError("EntityReceived");
-        OnBallReceived?.Invoke(entity.gameObject);
+        OnEntityReceived?.Invoke(entity);
     }
 
     public override void ConnectAttempt(UdpEndPoint endpoint, IProtocolToken token)
@@ -146,19 +146,7 @@ public class NetworkController : Bolt.GlobalEventListener
     {
         _waitingInitialRoomLiat = false;
         Debug.LogError("SessionListUpdated");
-        var log = LogEvent.Create();
-        log.Message = "SessionListUpdated";
-        log.Send();
-        foreach (var session in sessionList)
-        {
-            UdpSession photonSession = session.Value as UdpSession;
-            Debug.LogError($"Session: {photonSession.HostName}");
-
-            if (photonSession.Source == UdpSessionSource.Photon)
-            {
-                BoltNetwork.Connect(photonSession);
-            }
-        }
+        BoltMatchmaking.JoinRandomSession();
     }
     #endregion
 }

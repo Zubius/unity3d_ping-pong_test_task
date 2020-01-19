@@ -62,7 +62,7 @@ public class GameController : Bolt.GlobalEventListener
         network.OnConnected += OnConnected;
         network.ConnectNetwork();
         // network.ConnectLocal();
-        network.OnBallReceived += OnBallReceived;
+        network.OnEntityReceived += OnEntityReceived;
     }
 
     public void OnMenuPressed()
@@ -107,10 +107,13 @@ public class GameController : Bolt.GlobalEventListener
         StartGame(ball);
     }
 
-    private void OnBallReceived(GameObject ball)
+    private void OnEntityReceived(BoltEntity entity)
     {
-        this.ball = ball.GetComponent<BallView>();
-        StartGame(this.ball);
+        if (entity.StateIs<IPingBallState>())
+        {
+            ball = entity.GetComponent<BallView>();
+            StartGame(ball);
+        }
     }
 
     private void StartGame(BallView ball)

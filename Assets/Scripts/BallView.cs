@@ -45,7 +45,7 @@ public class BallView : Bolt.EntityBehaviour<IPingBallState>
 
     internal void SetColor(Color color)
     {
-        if (_cachedRenderer != null && entity.IsOwner)
+        if (entity.IsOwner && _cachedRenderer != null)
         {
             state.BallColor = color;
         }
@@ -53,7 +53,7 @@ public class BallView : Bolt.EntityBehaviour<IPingBallState>
 
     internal void SetSize(float size)
     {
-        if (_cachedTransform != null && entity.IsOwner)
+        if (entity.IsOwner && _cachedTransform != null)
         {
             state.BallSize = new Vector3(size, size, size);
         }
@@ -85,11 +85,14 @@ public class BallView : Bolt.EntityBehaviour<IPingBallState>
         if (other.transform.tag.Equals(ScoreTag))
         {
             OnScored?.Invoke(other);
-            _isLaunched = false;
-            rigidbody.velocity = Vector3.zero;
+            if (entity.IsOwner)
+            {
+                _isLaunched = false;
+                rigidbody.velocity = Vector3.zero;
+            }
         }
 
-        if (other.transform.tag.Equals(BounceTag))
+        if (entity.IsOwner && other.transform.tag.Equals(BounceTag))
         {
             Vector3 d, n, r;
 
