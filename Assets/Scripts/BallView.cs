@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class BallView : MonoBehaviour
+public class BallView : Bolt.EntityBehaviour<IPingBallState>
 {
     [SerializeField] private Rigidbody rigidbody;
 
@@ -25,30 +25,64 @@ public class BallView : MonoBehaviour
         _cachedTransform = transform;
     }
 
+    public override void Attached()
+    {
+        state.SetTransforms(state.BallTransform, _cachedTransform);
+
+        state.AddCallback("BallSize", SizeChanged);
+        state.AddCallback("BallColor", ColorChanged);
+    }
+
     internal void Launch(Vector2 direction, float speed)
     {
-        _speed = speed;
-        _velocity = direction;
-        _isLaunched = true;
+        if (entity.IsOwner)
+        {
+            _speed = speed;
+            _velocity = direction;
+            _isLaunched = true;
+        }
     }
 
     internal void SetColor(Color color)
     {
-        if (_cachedRenderer != null)
+        if (_cachedRenderer != null && entity.IsOwner)
         {
-            _cachedRenderer.sharedMaterial.color = color;
+            // _cachedRenderer.sharedMaterial.color = color;
+            state.BallColor = color;
         }
     }
 
     internal void SetSize(float size)
     {
-        if (_cachedTransform != null)
+        if (_cachedTransform != null && entity.IsOwner)
         {
-            _cachedTransform.localScale = new Vector3(size, size, size);
+            // _cachedTransform.localScale = new Vector3(size, size, size);
+            state.BallSize = new Vector3(size, size, size);
         }
     }
 
-    private void Update()
+    private void ColorChanged()
+    {
+        _cachedRenderer.sharedMaterial.color = state.BallColor;
+    }
+
+    private void SizeChanged()
+    {
+        _cachedTransform.localScale = state.BallSize;
+    }
+
+    // private void Update()
+    // {
+    //     if (_isLaunched && entity.IsOwner)
+    //     {
+    //         _velocity = _velocity.normalized * _speed;
+    //         rigidbody.velocity = _velocity;
+    //
+    //         Debug.DrawRay(transform.position, rigidbody.velocity, Color.green);
+    //     }
+    // }
+
+    public override void SimulateOwner()
     {
         if (_isLaunched)
         {

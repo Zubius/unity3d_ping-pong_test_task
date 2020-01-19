@@ -519,6 +519,7 @@ PlayerSettings:
   webGLThreadsSupport: 0
   webGLWasmStreaming: 0
   scriptingDefineSymbols:
+    1: BOLT_CLOUD
     4: BOLT_CLOUD
   platformArchitecture: {}
   scriptingBackend: {}

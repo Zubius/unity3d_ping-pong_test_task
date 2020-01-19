@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
-public class GameController : MonoBehaviour
+public class GameController : Bolt.GlobalEventListener
 {
     [SerializeField] private BallView ball;
 
@@ -55,7 +55,9 @@ public class GameController : MonoBehaviour
         rivalScoreText.text = string.Format(bestScoreFormat, _rivalScore.ToString(), _rivalBestScore.ToString());
 
         _inputType = InputType.Touch;
-        Restart(_inputType);
+
+        BoltLauncher.StartSinglePlayer();
+        // Restart(_inputType);
     }
 
     public void OnMenuPressed()
@@ -92,6 +94,12 @@ public class GameController : MonoBehaviour
         if (_launchCoroutine != null)
             StopCoroutine(_launchCoroutine);
         _launchCoroutine = StartCoroutine(LaunchBall());
+    }
+
+    public override void BoltStartDone()
+    {
+        BoltNetwork.Attach(ball.gameObject);
+        Restart(_inputType);
     }
 
     private IEnumerator LaunchBall()
