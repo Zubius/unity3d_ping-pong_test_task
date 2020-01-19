@@ -372,7 +372,7 @@ MonoBehaviour:
   m_Script: {fileID: -36112512, guid: 5b00bf8b25851d440940a40ec23344f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _sceneGuid: 
+  _sceneGuid: fc2f640c-4f48-45fe-bcb6-88cc8f65a932
   _serializerGuid: 6e722470-697b-416c-ada9-f3cb70acc9f1
   _prefabId: 0
   _updateRate: 1
@@ -1854,6 +1854,7 @@ GameObject:
   - component: {fileID: 2090535745}
   - component: {fileID: 2090535744}
   - component: {fileID: 2090535746}
+  - component: {fileID: 2090535747}
   m_Layer: 0
   m_Name: GameController
   m_TagString: Untagged
@@ -1878,6 +1879,7 @@ MonoBehaviour:
   myScoreText: {fileID: 116625334}
   rivalScoreText: {fileID: 2039151794}
   touchInput: {fileID: 2090535746}
+  network: {fileID: 2090535747}
   playerRacket: {fileID: 398152709}
   rivalRacket: {fileID: 216798775}
   menu: {fileID: 2103449111}
@@ -1905,6 +1907,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 58cb571410eb497289285d0929ae2870, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2090535747
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2090535743}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c4863125c484faf88177bad7a4e6d3c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &2103449111

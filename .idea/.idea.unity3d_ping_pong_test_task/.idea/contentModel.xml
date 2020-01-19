@@ -91,6 +91,7 @@
           <e p="BallView.cs" t="Include" />
           <e p="GameController.cs" t="Include" />
           <e p="IRacketInput.cs" t="Include" />
+          <e p="NetworkController.cs" t="Include" />
           <e p="Racket.cs" t="Include" />
           <e p="TouchInputController.cs" t="Include" />
         </e>

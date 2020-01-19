@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Bolt;
+using UdpKit;
 using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
@@ -14,6 +16,7 @@ public class GameController : Bolt.GlobalEventListener
     [SerializeField] private Text rivalScoreText;
 
     [SerializeField] private TouchInputController touchInput;
+    [SerializeField] private NetworkController network;
 
     [SerializeField] private Racket playerRacket;
     [SerializeField] private Racket rivalRacket;
@@ -56,8 +59,10 @@ public class GameController : Bolt.GlobalEventListener
 
         _inputType = InputType.Touch;
 
-        BoltLauncher.StartSinglePlayer();
-        // Restart(_inputType);
+        network.OnConnected += OnConnected;
+        network.ConnectNetwork();
+        // network.ConnectLocal();
+        network.OnBallReceived += OnBallReceived;
     }
 
     public void OnMenuPressed()
@@ -96,9 +101,21 @@ public class GameController : Bolt.GlobalEventListener
         _launchCoroutine = StartCoroutine(LaunchBall());
     }
 
-    public override void BoltStartDone()
+    private void OnConnected()
     {
-        BoltNetwork.Attach(ball.gameObject);
+        ball = BoltNetwork.Instantiate(BoltPrefabs.Ball, Vector3.zero, Quaternion.identity).GetComponent<BallView>();
+        StartGame(ball);
+    }
+
+    private void OnBallReceived(GameObject ball)
+    {
+        this.ball = ball.GetComponent<BallView>();
+        StartGame(this.ball);
+    }
+
+    private void StartGame(BallView ball)
+    {
+        ball.OnScored += OnScored;
         Restart(_inputType);
     }
 

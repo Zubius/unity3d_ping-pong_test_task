@@ -47,7 +47,6 @@ public class BallView : Bolt.EntityBehaviour<IPingBallState>
     {
         if (_cachedRenderer != null && entity.IsOwner)
         {
-            // _cachedRenderer.sharedMaterial.color = color;
             state.BallColor = color;
         }
     }
@@ -56,7 +55,6 @@ public class BallView : Bolt.EntityBehaviour<IPingBallState>
     {
         if (_cachedTransform != null && entity.IsOwner)
         {
-            // _cachedTransform.localScale = new Vector3(size, size, size);
             state.BallSize = new Vector3(size, size, size);
         }
     }
@@ -70,17 +68,6 @@ public class BallView : Bolt.EntityBehaviour<IPingBallState>
     {
         _cachedTransform.localScale = state.BallSize;
     }
-
-    // private void Update()
-    // {
-    //     if (_isLaunched && entity.IsOwner)
-    //     {
-    //         _velocity = _velocity.normalized * _speed;
-    //         rigidbody.velocity = _velocity;
-    //
-    //         Debug.DrawRay(transform.position, rigidbody.velocity, Color.green);
-    //     }
-    // }
 
     public override void SimulateOwner()
     {
