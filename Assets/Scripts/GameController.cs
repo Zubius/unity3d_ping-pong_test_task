@@ -23,6 +23,8 @@ public class GameController : Bolt.GlobalEventListener
 
     [SerializeField] private GameObject menu;
 
+
+
     private int _myScore, _rivalScore, _myBestScore, _rivalBestScore;
     private readonly WaitForSeconds _waitFor1Sec = new WaitForSeconds(1);
     private bool _menuIsActive = false;
@@ -41,7 +43,7 @@ public class GameController : Bolt.GlobalEventListener
     {
         if (ball != null)
         {
-            ball.OnScored += OnScored;
+            ball.OnScored = OnScored;
         }
 
         _inputs = new Dictionary<InputType, IRacketInput>
@@ -60,9 +62,20 @@ public class GameController : Bolt.GlobalEventListener
         _inputType = InputType.Touch;
 
         network.OnConnected += OnConnected;
+        network.OnDisonnected += OnDisonnected;
         network.ConnectNetwork();
         // network.ConnectLocal();
         network.OnEntityReceived += OnEntityReceived;
+    }
+
+    private void OnDisonnected()
+    {
+        if (network.State == ConnectState.ConnectedAsServer)
+        {
+            ball.Stop();
+        }
+
+        Application.Quit();
     }
 
     public void OnMenuPressed()
@@ -92,18 +105,24 @@ public class GameController : Bolt.GlobalEventListener
 
         rivalRacket.SetInput(_inputs[inputType]);
 
-        ball.transform.localPosition = new Vector2(10000, 10000);
-        ball.SetSize(Random.Range(0.1f, 1f));
-        ball.SetColor(Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f));
+        bool asServer = network.State == ConnectState.ConnectedAsServer;
+        if (asServer)
+        {
+            ball.transform.localPosition = new Vector2(10000, 10000);
+            ball.SetSize(Random.Range(0.1f, 1f));
+            ball.SetColor(Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f));
+
+        }
 
         if (_launchCoroutine != null)
             StopCoroutine(_launchCoroutine);
-        _launchCoroutine = StartCoroutine(LaunchBall());
+        _launchCoroutine = StartCoroutine(LaunchBall(asServer));
     }
 
     private void OnConnected()
     {
         ball = BoltNetwork.Instantiate(BoltPrefabs.Ball, Vector3.zero, Quaternion.identity).GetComponent<BallView>();
+
         StartGame(ball);
     }
 
@@ -111,18 +130,19 @@ public class GameController : Bolt.GlobalEventListener
     {
         if (entity.StateIs<IPingBallState>())
         {
+            Camera.main.transform.localRotation = Quaternion.Euler(0, 0, 180);
             ball = entity.GetComponent<BallView>();
             StartGame(ball);
         }
     }
 
-    private void StartGame(BallView ball)
+    private void StartGame(BallView ballб )
     {
-        ball.OnScored += OnScored;
+        ball.OnScored = OnScored;
         Restart(_inputType);
     }
 
-    private IEnumerator LaunchBall()
+    private IEnumerator LaunchBall(bool asServer)
     {
         for (int i = 3; i > 0; i--)
         {
@@ -131,8 +151,11 @@ public class GameController : Bolt.GlobalEventListener
         }
         countText.text = string.Empty;
 
-        ball.transform.localPosition = Vector3.zero;
-        ball.Launch(new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f)), Random.Range(1f, 10f));
+        if (asServer)
+        {
+            ball.transform.localPosition = Vector3.zero;
+            ball.Launch(new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f)), Random.Range(1f, 10f));
+        }
     }
 
     private void OnScored(Collision obj)
@@ -155,7 +178,7 @@ public class GameController : Bolt.GlobalEventListener
 
         if (_launchCoroutine != null)
             StopCoroutine(_launchCoroutine);
-        StartCoroutine(LaunchBall());
+        StartCoroutine(LaunchBall(network.State == ConnectState.ConnectedAsServer));
     }
 
     private void OnDestroy()

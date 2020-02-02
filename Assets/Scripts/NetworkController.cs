@@ -8,6 +8,7 @@ public class NetworkController : Bolt.GlobalEventListener
 {
     public ConnectState  State => _state;
     public event Action OnConnected;
+    public event Action OnDisonnected;
     public event Action<BoltEntity> OnEntityReceived;
 
     private ConnectState _state = ConnectState.Disconnected;
@@ -61,17 +62,20 @@ public class NetworkController : Bolt.GlobalEventListener
         {
             _waitingInitialRoomLiat = true;
             _waitingRoomListTimer = 5f;
+            _state = ConnectState.ConnectedAsClient;
         }
 
         if (BoltNetwork.IsServer && !BoltNetwork.IsSinglePlayer)
         {
             string matchName = Guid.NewGuid().ToString();
+            _state = ConnectState.ConnectedAsServer;
 
             BoltMatchmaking.CreateSession(matchName);
         }
 
         if (BoltNetwork.IsSinglePlayer)
         {
+            _state = ConnectState.ConnectedAsServer;
             OnConnected?.Invoke();
         }
     }
@@ -90,10 +94,15 @@ public class NetworkController : Bolt.GlobalEventListener
                     _state = ConnectState.ServerConnecting;
                     BoltLauncher.StartServer();
                     break;
-                default:
-                    throw new ArgumentOutOfRangeException();
             }
         });
+    }
+
+    public override void Disconnected(BoltConnection connection)
+    {
+        Debug.LogError("Disconnected");
+        _state = ConnectState.Disconnected;
+        OnDisonnected?.Invoke();
     }
 
     public override void Connected(BoltConnection connection)
@@ -156,5 +165,7 @@ public enum ConnectState
     Disconnected,
     ClientConnecting,
     ServerConnecting,
+    ConnectedAsClient,
+    ConnectedAsServer,
     ReconnectingFromClientToServer,
 }

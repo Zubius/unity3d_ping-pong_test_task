@@ -43,6 +43,13 @@ public class BallView : Bolt.EntityBehaviour<IPingBallState>
         }
     }
 
+    internal void Stop()
+    {
+        _speed = 0;
+        _velocity = Vector2.zero;
+        _isLaunched = false;
+    }
+
     internal void SetColor(Color color)
     {
         if (entity.IsOwner && _cachedRenderer != null)
