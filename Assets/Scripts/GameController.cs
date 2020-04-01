@@ -153,9 +153,41 @@ public class GameController : Bolt.GlobalEventListener
 
         if (asServer)
         {
+            var angle = GetAngle(new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f)));
+            var speed = Random.Range(3f, 10f);
+
+            var d = angle % 90;
+            if (d <= 10)
+            {
+                angle += 10;
+            }
+            else if (d >= 80)
+            {
+                angle -= 10;
+            }
+
+            var rad = angle * Mathf.Deg2Rad;
+            var direction = new Vector2(Mathf.Cos(rad), Mathf.Sin(rad));
+
             ball.transform.localPosition = Vector3.zero;
-            ball.Launch(new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f)), Random.Range(1f, 10f));
+            ball.Launch(direction, speed);
         }
+    }
+
+    private float GetAngle(Vector3 vector)
+    {
+        var ang = Mathf.Asin(vector.x) * Mathf.Rad2Deg;
+
+        if (vector.y < 0)
+        {
+            ang = 180 - ang;
+        }
+        else if (vector.x < 0)
+        {
+            ang = 360 + ang;
+        }
+
+        return ang;
     }
 
     private void OnScored(Collision obj)
