@@ -15,7 +15,7 @@ public class BallView : Bolt.EntityBehaviour<IPingBallState>
     private const string ScoreTag = "Finish";
     private const string BounceTag = "Bounce";
 
-    private float _speed = 0;
+    [SerializeField] private float speed = 0;
     private Vector2 _velocity;
     private bool _isLaunched = false;
 
@@ -37,7 +37,7 @@ public class BallView : Bolt.EntityBehaviour<IPingBallState>
     {
         if (entity.IsOwner)
         {
-            _speed = speed;
+            this.speed = speed;
             _velocity = direction;
             _isLaunched = true;
         }
@@ -45,7 +45,7 @@ public class BallView : Bolt.EntityBehaviour<IPingBallState>
 
     internal void Stop()
     {
-        _speed = 0;
+        speed = 0;
         _velocity = Vector2.zero;
         _isLaunched = false;
     }
@@ -80,7 +80,7 @@ public class BallView : Bolt.EntityBehaviour<IPingBallState>
     {
         if (_isLaunched)
         {
-            _velocity = _velocity.normalized * _speed;
+            _velocity = _velocity.normalized * speed;
             rigidbody.velocity = _velocity;
 
             Debug.DrawRay(transform.position, rigidbody.velocity, Color.green);

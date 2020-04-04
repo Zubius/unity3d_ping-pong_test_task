@@ -1,9 +1,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using Bolt;
 using UdpKit;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
@@ -11,33 +13,27 @@ public class GameController : Bolt.GlobalEventListener
 {
     [SerializeField] private BallView ball;
 
-    [SerializeField] private Text countText;
-    [SerializeField] private Text myScoreText;
-    [SerializeField] private Text rivalScoreText;
-
     [SerializeField] private TouchInputController touchInput;
+    [SerializeField] private PhotonInputController photonInput;
+
     [SerializeField] private NetworkController network;
 
-    [SerializeField] private Racket playerRacket;
-    [SerializeField] private Racket rivalRacket;
+    private UIController _uiController;
+    private GameFieldController _gameFieldController;
 
-    [SerializeField] private GameObject menu;
-
-
-
-    private int _myScore, _rivalScore, _myBestScore, _rivalBestScore;
     private readonly WaitForSeconds _waitFor1Sec = new WaitForSeconds(1);
-    private bool _menuIsActive = false;
-
-    private const string myScoreKey = "my_best_score";
-    private const string rivalScoreKey = "rival_best_score";
-    private const string bestScoreFormat = "{0} ({1})";
+    private Action _onGameSceneLoadedAction;
 
     private InputType _inputType = InputType.None;
 
     private Dictionary<InputType, IRacketInput> _inputs;
 
     private Coroutine _launchCoroutine = null;
+
+    private void Awake()
+    {
+        DontDestroyOnLoad(this);
+    }
 
     private void Start()
     {
@@ -48,24 +44,55 @@ public class GameController : Bolt.GlobalEventListener
 
         _inputs = new Dictionary<InputType, IRacketInput>
         {
-            {InputType.Touch, touchInput}
+            {InputType.Touch, touchInput},
+            {InputType.Photon, photonInput}
         };
-
-        playerRacket.SetInput(touchInput);
-
-        _myBestScore = PlayerPrefs.GetInt(myScoreKey, 0);
-        _rivalBestScore = PlayerPrefs.GetInt(rivalScoreKey, 0);
-
-        myScoreText.text = string.Format(bestScoreFormat, _myScore.ToString(), _myBestScore.ToString());
-        rivalScoreText.text = string.Format(bestScoreFormat, _rivalScore.ToString(), _rivalBestScore.ToString());
-
-        _inputType = InputType.Touch;
 
         network.OnConnected += OnConnected;
         network.OnDisonnected += OnDisonnected;
-        network.ConnectNetwork();
-        // network.ConnectLocal();
         network.OnEntityReceived += OnEntityReceived;
+
+        SceneManager.sceneLoaded += SceneManagerOnsceneLoaded;
+    }
+
+    private void SceneManagerOnsceneLoaded(Scene scene, LoadSceneMode arg1)
+    {
+        if (scene.name.Equals("GameScene"))
+        {
+            _uiController = UIController.SharedController;
+            _gameFieldController = GameFieldController.SharedController;
+            _onGameSceneLoadedAction?.Invoke();
+
+            _gameFieldController.PlayerRacket.SetInput(touchInput);
+            _uiController.ResetScores();
+
+            SceneManager.sceneLoaded -= SceneManagerOnsceneLoaded;
+        }
+    }
+
+    public void U_StartSinglePlayer()
+    {
+        _onGameSceneLoadedAction = () =>
+        {
+            _inputType = InputType.Touch;
+            network.ConnectLocal();
+        };
+        LoadGameScene();
+    }
+
+    public void U_StartMultiPlayer()
+    {
+        _onGameSceneLoadedAction = () =>
+        {
+            _inputType = InputType.Photon;
+            network.ConnectNetwork();
+        };
+        LoadGameScene();
+    }
+
+    private void LoadGameScene()
+    {
+        SceneManager.LoadScene("GameScene");
     }
 
     private void OnDisonnected()
@@ -78,14 +105,6 @@ public class GameController : Bolt.GlobalEventListener
         Application.Quit();
     }
 
-    public void OnMenuPressed()
-    {
-        _menuIsActive = !_menuIsActive;
-        menu.SetActive(_menuIsActive);
-
-        Time.timeScale = _menuIsActive ? 0 : 1;
-    }
-
     public void OnRestartPressed()
     {
         Restart(_inputType);
@@ -93,17 +112,10 @@ public class GameController : Bolt.GlobalEventListener
 
     private void Restart(InputType inputType)
     {
-        _menuIsActive = false;
-        menu.SetActive(_menuIsActive);
-        Time.timeScale = 1;
+        _uiController.HideMenu();
+        _uiController.ResetScores();
 
-        _myScore = 0;
-        _rivalScore = 0;
-
-        myScoreText.text = string.Format(bestScoreFormat, _myScore.ToString(), _myBestScore.ToString());
-        rivalScoreText.text = string.Format(bestScoreFormat, _rivalScore.ToString(), _rivalBestScore.ToString());
-
-        rivalRacket.SetInput(_inputs[inputType]);
+        _gameFieldController.RivalRacket.SetInput(_inputs[inputType]);
 
         bool asServer = network.State == ConnectState.ConnectedAsServer;
         if (asServer)
@@ -122,6 +134,7 @@ public class GameController : Bolt.GlobalEventListener
     private void OnConnected()
     {
         ball = BoltNetwork.Instantiate(BoltPrefabs.Ball, Vector3.zero, Quaternion.identity).GetComponent<BallView>();
+        ball.transform.SetParent(_gameFieldController.GameField);
 
         StartGame(ball);
     }
@@ -130,13 +143,14 @@ public class GameController : Bolt.GlobalEventListener
     {
         if (entity.StateIs<IPingBallState>())
         {
-            Camera.main.transform.localRotation = Quaternion.Euler(0, 0, 180);
+            _gameFieldController.SetGameFieldRotation(Quaternion.Euler(0, 0, 180));
             ball = entity.GetComponent<BallView>();
+            ball.transform.SetParent(_gameFieldController.GameField);
             StartGame(ball);
         }
     }
 
-    private void StartGame(BallView ballб )
+    private void StartGame(BallView ball)
     {
         ball.OnScored = OnScored;
         Restart(_inputType);
@@ -146,10 +160,10 @@ public class GameController : Bolt.GlobalEventListener
     {
         for (int i = 3; i > 0; i--)
         {
-            countText.text = i.ToString();
+            _uiController.SetCounter(i);
             yield return _waitFor1Sec;
         }
-        countText.text = string.Empty;
+        _uiController.SetCounter(0);
 
         if (asServer)
         {
@@ -194,16 +208,12 @@ public class GameController : Bolt.GlobalEventListener
     {
         if (obj.transform.localPosition.y > 0)
         {
-            _myScore++;
-            _myBestScore = Mathf.Max(_myScore, _myBestScore);
-            myScoreText.text = string.Format(bestScoreFormat, _myScore.ToString(), _myBestScore.ToString());
+            _uiController.ScoreMe();
         }
 
         if (obj.transform.localPosition.y < 0)
         {
-            _rivalScore++;
-            _rivalBestScore = Mathf.Max(_rivalScore, _rivalBestScore);
-            rivalScoreText.text = string.Format(bestScoreFormat, _rivalScore.ToString(), _rivalBestScore.ToString());
+           _uiController.ScoreRival();
         }
 
         ball.transform.localPosition = new Vector2(10000, 10000);
@@ -219,21 +229,6 @@ public class GameController : Bolt.GlobalEventListener
         {
             ball.OnScored = null;
         }
-
-        SaveBestScores();
-    }
-
-    private void OnApplicationPause(bool isPaused)
-    {
-        if (isPaused)
-            SaveBestScores();
-    }
-
-    private void SaveBestScores()
-    {
-        PlayerPrefs.SetInt(myScoreKey, Mathf.Max(_myBestScore, _myScore));
-        PlayerPrefs.SetInt(rivalScoreKey, Mathf.Max(_rivalBestScore, _rivalScore));
-        PlayerPrefs.Save();
     }
 }
 
